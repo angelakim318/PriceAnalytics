@@ -1,5 +1,5 @@
-import dask.dataframe as dd
 import pandas as pd
+import os
 
 # Specify data types explicitly for all columns
 dtype = {
@@ -36,17 +36,34 @@ def process_chunk(chunk):
     
     return chunk
 
-# Load the dataset in chunks
+# Load the dataset in chunks and process each chunk
 data_path = './data/usa_real_estate.csv'
-chunk_size = 100000  # Adjust the chunk size based on your memory capacity
-chunks = []
+chunk_size = 50000  # Adjust the chunk size based on your memory capacity
 
-for chunk in pd.read_csv(data_path, dtype=dtype, chunksize=chunk_size):
+output_file = './data/cleaned_usa_real_estate.csv'
+temp_files = []
+
+# Process and save each chunk
+for i, chunk in enumerate(pd.read_csv(data_path, dtype=dtype, chunksize=chunk_size)):
     processed_chunk = process_chunk(chunk)
-    chunks.append(processed_chunk)
+    temp_file = f'./data/temp_cleaned_chunk_{i}.csv'
+    processed_chunk.to_csv(temp_file, index=False)
+    temp_files.append(temp_file)
 
-# Concatenate all processed chunks
-df = pd.concat(chunks, ignore_index=True)
+# Combine all processed chunks incrementally
+header = True
+with open(output_file, 'w') as f_out:
+    for temp_file in temp_files:
+        with open(temp_file, 'r') as f_in:
+            if header:
+                # Write the header for the first chunk
+                f_out.write(f_in.read())
+                header = False
+            else:
+                # Skip the header for subsequent chunks
+                next(f_in)
+                f_out.write(f_in.read())
 
-# Save the cleaned dataset to a new CSV file
-df.to_csv('./data/cleaned_usa_real_estate.csv', index=False)
+# Optionally, clean up temporary files
+for temp_file in temp_files:
+    os.remove(temp_file)
