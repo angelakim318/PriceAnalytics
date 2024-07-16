@@ -4,6 +4,7 @@ venv/
 # Data files
 data/usa_real_estate.csv
 data/cleaned_usa_real_estate.csv
+data/cleaned_usa_real_estate_fixed.csv
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
